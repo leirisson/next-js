@@ -9,8 +9,7 @@ type ActiveLink = {
 export default function ActiveLink({ children, href, ...rest }: ActiveLink) {
     const router = useRouter()
     const isCurrentPath = 
-    const isHomePage = router.pathname === '/'
-    const isBlogPage = router.pathname.startsWith('/blog')
+
 
 
     return (
