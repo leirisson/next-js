@@ -1,4 +1,14 @@
 import { GetServerSideProps } from "next";
+import { ChangeEvent, useEffect, useState } from "react";
+import { firebaseDB } from "@/src/services/firebase";
+import {
+  addDoc,
+  collection,
+  query,
+  orderBy,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
 import { getSession } from "next-auth/react";
 import Head from "next/head";
 import styles from "./styles.module.css";
@@ -6,23 +16,73 @@ import { TextArea } from "@/src/components/textarea";
 import { FiShare2 } from "react-icons/fi";
 import { FaTrash } from "react-icons/fa";
 
-import { ChangeEvent, FormEvent, useState } from "react";
+interface HomeProps {
+  user: {
+    email: string;
+  };
+}
 
-export default function Dashboard() {
+interface TaskProps {
+  id: string;
+  tarefa: string;
+  user: string;
+  public: boolean;
+  createdAt: Date;
+}
+
+export default function Dashboard({ user }: HomeProps) {
   const [input, setInput] = useState<string>("");
-  const [publictask, setPublicTask] = useState<boolean>();
+  const [publictask, setPublicTask] = useState<boolean>(false);
+  const [tasks, setTasks] = useState<TaskProps[]>([]);
 
-  function handleChangePublic(e: ChangeEvent<HTMLInputElement>){
-    setPublicTask(e.target.checked)
+  useEffect(() => {
+    async function loadTarefas() {
+      const tarefasRef = collection(firebaseDB, "tarefas");
+      const queryInDataBase = query(
+        tarefasRef,
+        orderBy("createdAt"),
+        where("user", "==", user.email),
+      );
+
+      onSnapshot(queryInDataBase, (snapshot) => {
+        const listaDeTarefas: TaskProps[] = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          tarefa: doc.data().tarefa,
+          user: doc.data().user,
+          public: doc.data().public,
+          createdAt: doc.data().createdAt,
+        }));
+
+        setTasks(listaDeTarefas);
+      });
+    }
+
+    loadTarefas();
+  }, [user.email]);
+
+  function handleChangePublic(e: ChangeEvent<HTMLInputElement>) {
+    console.log(e.target.checked);
+    setPublicTask(e.target.checked);
   }
 
-  function handleSubmitRegister(e: ChangeEvent<HTMLFormElement>){
-    e.preventDefault()
+  async function handleSubmitRegister(e: ChangeEvent<HTMLFormElement>) {
+    e.preventDefault();
 
-    if(input === "") return
+    if (input === "") return;
 
-    alert("teste")
+    try {
+      await addDoc(collection(firebaseDB, "tarefas"), {
+        tarefa: input,
+        createdAt: new Date(),
+        user: user.email,
+        public: publictask,
+      });
 
+      setInput("");
+      setPublicTask(false);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   return (
@@ -37,13 +97,16 @@ export default function Dashboard() {
               <h2 className={styles.title}>Qual é a sua nova tarefa ?</h2>
               <form onSubmit={handleSubmitRegister}>
                 <TextArea
-                value={input}
-                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
-                 placeholder="Digite a sua tarefa ..." />
+                  value={input}
+                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                    setInput(e.target.value)
+                  }
+                  placeholder="Digite a sua tarefa ..."
+                />
                 <div className={styles.checkBoxArea}>
                   <input
-                  checked={publictask}
-                  onChange={() => handleChangePublic}
+                    checked={publictask}
+                    onChange={handleChangePublic}
                     type="checkbox"
                     className={styles.checkbox}
                     name="checkbox"
@@ -59,42 +122,28 @@ export default function Dashboard() {
           </section>
           <section className={styles.taskcontainer}>
             <h1>Minhas Tarefas</h1>
-            <article className={styles.task}>
-              <div className={styles.tagContainer}>
-                <label className={styles.tag}>PUBLICO</label>
-                <button className={styles.shareButton}>
-                  <FiShare2 size={22} color="#3183ff" />
-                </button>
-              </div>
-              <div className={styles.teskContent}>
-                <span>minha primeira tarefa da de exemplo</span>
-                <button className={styles.trashButton}>
-                  <FaTrash
-                    className={styles.trashButton}
-                    size={24}
-                    color="#ea3140"
-                  />
-                </button>
-              </div>
-            </article>
-            <article className={styles.task}>
-              <div className={styles.tagContainer}>
-                <label className={styles.tag}>PUBLICO</label>
-                <button className={styles.shareButton}>
-                  <FiShare2 size={22} color="#3183ff" />
-                </button>
-              </div>
-              <div className={styles.teskContent}>
-                <span>minha primeira tarefa da de exemplo</span>
-                <button className={styles.trashButton}>
-                  <FaTrash
-                    className={styles.trashButton}
-                    size={24}
-                    color="#ea3140"
-                  />
-                </button>
-              </div>
-            </article>
+            {tasks.map((itemTask) => (
+              <article key={itemTask.id} className={styles.task}>
+                {itemTask.public && (
+                  <div className={styles.tagContainer}>
+                    <label className={styles.tag}>PUBLICO</label>
+                    <button className={styles.shareButton}>
+                      <FiShare2 size={22} color="#3183ff" />
+                    </button>
+                  </div>
+                )}
+                <div className={styles.teskContent}>
+                  <span>{itemTask.tarefa}</span>
+                  <button className={styles.trashButton}>
+                    <FaTrash
+                      className={styles.trashButton}
+                      size={24}
+                      color="#ea3140"
+                    />
+                  </button>
+                </div>
+              </article>
+            ))}
           </section>
         </main>
       </div>
@@ -116,6 +165,10 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
   }
 
   return {
-    props: {},
+    props: {
+      user: {
+        email: session.user.email,
+      },
+    },
   };
 };
