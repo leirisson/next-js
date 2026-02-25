@@ -1,4 +1,4 @@
-import { GetServerSideProps } from "next";
+import { GetServerSideProps, GetStaticProps } from "next";
 import Link from "next/link";
 import { ChangeEvent, useEffect, useState } from "react";
 import { firebaseDB } from "@/src/services/firebase";
@@ -197,3 +197,5 @@ export const getServerSideProps: GetServerSideProps = async ({ req }) => {
     },
   };
 };
+
+

@@ -10,11 +10,13 @@ import {
   getDoc,
   addDoc,
   getDocs,
+  deleteDoc,
 } from "firebase/firestore";
 import { redirect } from "next/dist/server/api-utils";
 import { TextArea } from "@/src/components/textarea";
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, useState } from "react";
 import { useSession } from "next-auth/react";
+import { FaTrash } from "react-icons/fa";
 
 interface TaskProps {
   item: {
@@ -28,7 +30,7 @@ interface TaskProps {
 }
 
 interface CommentsProps {
-  id: string
+  id: string;
   comment: string;
   createdAt: string;
   email: string;
@@ -56,9 +58,33 @@ export default function Task({ item, allComents }: TaskProps) {
         taskId: item.taskId,
       });
 
+      const data = {
+        id: docRef.id,
+        comment,
+        createdAt: item.createdAt,
+        user: session?.user.name,
+        email: session?.user?.email,
+        taskId: item.taskId,
+      };
+
+      setComments((oldItem) => [...oldItem, data]);
+
       setComment("");
     } catch (error) {
       console.log(error);
+    }
+  }
+
+  async function handleDeleteFunction(id: string){
+    try {
+      const docRef =  doc(firebaseDB, "comments", id)
+      await deleteDoc(docRef)
+      const deleteComment = comments.filter(comment => comment.id !== id)
+
+      setComments(deleteComment)
+
+    } catch (error) {
+      console.log(error)
     }
   }
 
@@ -74,7 +100,7 @@ export default function Task({ item, allComents }: TaskProps) {
         </article>
       </main>
 
-      <section className={styles.commentsContaine}>
+      <section className={styles.commentsContainer}>
         <h2>Deixar o seu comentario</h2>
 
         <form
@@ -96,23 +122,27 @@ export default function Task({ item, allComents }: TaskProps) {
 
       <section className={styles.commentsContainer}>
         <h2>Todos os comentarios</h2>
-        {comments.length === 0 && (
-          <span>Nenhum cometario foi encontrado</span>
-        )}
+        {comments.length === 0 && <span>Nenhum cometario foi encontrado</span>}
 
-        {
-          comments.map((item) => (
-            <article key={item.id}>
-              {item.comment}
-            </article>
-          ))
-        }
+        {comments.map((item) => (
+          <article key={item.id} className={styles.comment}>
+            <div className={styles.headComment}>
+              <label className={styles.commentsLabel}>{item.user}</label>
+              {item.email === session?.user?.email && (
+                <button className={styles.butonTrash}>
+                  <FaTrash size={18} color="#EA3140" onClick={() => handleDeleteFunction(item.id)}/>
+                </button>
+              )}
+            </div>
+            <p>{item.comment}</p>
+          </article>
+        ))}
       </section>
     </div>
   );
 }
 
-// pegando o id usando o server side rendering
+// pegando o id usando o server side rendering # interagindo do lado do servidor
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const id = params?.id as string;
   const docRef = doc(firebaseDB, "tarefas", id);
