@@ -1,4 +1,5 @@
 import { GetServerSideProps } from "next";
+import Link from "next/link";
 import { ChangeEvent, useEffect, useState } from "react";
 import { firebaseDB } from "@/src/services/firebase";
 import {
@@ -8,6 +9,8 @@ import {
   orderBy,
   where,
   onSnapshot,
+  doc,
+  deleteDoc
 } from "firebase/firestore";
 import { getSession } from "next-auth/react";
 import Head from "next/head";
@@ -43,7 +46,9 @@ export default function Dashboard({ user }: HomeProps) {
         orderBy("createdAt"),
         where("user", "==", user.email),
       );
-
+      /**
+       * O onSnapshot fica sempre monitorando o banco
+       */
       onSnapshot(queryInDataBase, (snapshot) => {
         const listaDeTarefas: TaskProps[] = snapshot.docs.map((doc) => ({
           id: doc.id,
@@ -85,6 +90,19 @@ export default function Dashboard({ user }: HomeProps) {
     }
   }
 
+  async function  handleshare(id:string) {
+    await navigator.clipboard.writeText(
+      `${process.env.NEXT_PUBLIC_URL}/task/${id}`
+    )
+
+    alert('url copiada com sucesso !')
+  }
+
+  async function handledeltetask(id:string){
+    const docref = doc(firebaseDB,"tarefas", id)
+    await deleteDoc(docref)
+  }
+
   return (
     <>
       <div className={styles.conatiner}>
@@ -124,17 +142,24 @@ export default function Dashboard({ user }: HomeProps) {
             <h1>Minhas Tarefas</h1>
             {tasks.map((itemTask) => (
               <article key={itemTask.id} className={styles.task}>
-                {itemTask.public && (
+                {/* verifica se o item é publico ou não  */}
+                {itemTask.public && ( 
                   <div className={styles.tagContainer}>
                     <label className={styles.tag}>PUBLICO</label>
-                    <button className={styles.shareButton}>
+                    <button className={styles.shareButton} onClick={() => handleshare(itemTask.id)}>
                       <FiShare2 size={22} color="#3183ff" />
                     </button>
                   </div>
                 )}
                 <div className={styles.teskContent}>
-                  <span>{itemTask.tarefa}</span>
-                  <button className={styles.trashButton}>
+                  {itemTask.public ? (
+                    <Link href={`/task/${itemTask.id}`}>
+                      <span>{itemTask.tarefa}</span>
+                    </Link>
+                  ) : (
+                    <span>{itemTask.tarefa}</span>
+                  )}
+                  <button className={styles.trashButton} onClick={() => handledeltetask(itemTask.id)}>
                     <FaTrash
                       className={styles.trashButton}
                       size={24}
