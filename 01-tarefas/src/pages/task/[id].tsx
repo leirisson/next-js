@@ -9,6 +9,7 @@ import {
   query,
   getDoc,
   addDoc,
+  getDocs,
 } from "firebase/firestore";
 import { redirect } from "next/dist/server/api-utils";
 import { TextArea } from "@/src/components/textarea";
@@ -23,30 +24,39 @@ interface TaskProps {
     taskId: string;
     createdAt: string;
   };
+  allComents: CommentsProps[];
 }
 
-export default function Task({ item }: TaskProps) {
+interface CommentsProps {
+  id: string
+  comment: string;
+  createdAt: string;
+  email: string;
+  taskId: string;
+  user: string;
+}
+
+export default function Task({ item, allComents }: TaskProps) {
   const { data: session } = useSession();
-  const [comments, setComments] = useState<string>("");
+  const [comment, setComment] = useState<string>("");
+  const [comments, setComments] = useState<CommentsProps[]>(allComents || []);
 
   async function handleRegisterComments(e: ChangeEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (comments === "") return;
+    if (comment === "") return;
     if (!session?.user?.email || !session?.user.name) return;
-
-  
 
     try {
       const docRef = await addDoc(collection(firebaseDB, "comments"), {
-        comments,
+        comment: comment,
         createdAt: new Date(),
         user: session?.user.name,
         email: session?.user.email,
         taskId: item.taskId,
       });
 
-      setComments("");
+      setComment("");
     } catch (error) {
       console.log(error);
     }
@@ -72,9 +82,9 @@ export default function Task({ item }: TaskProps) {
           onSubmit={handleRegisterComments}
         >
           <TextArea
-            value={comments}
+            value={comment}
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-              setComments(e.target.value)
+              setComment(e.target.value)
             }
             placeholder="digite o seu comentário..."
           />
@@ -83,6 +93,21 @@ export default function Task({ item }: TaskProps) {
           </button>
         </form>
       </section>
+
+      <section className={styles.commentsContainer}>
+        <h2>Todos os comentarios</h2>
+        {comments.length === 0 && (
+          <span>Nenhum cometario foi encontrado</span>
+        )}
+
+        {
+          comments.map((item) => (
+            <article key={item.id}>
+              {item.comment}
+            </article>
+          ))
+        }
+      </section>
     </div>
   );
 }
@@ -90,8 +115,29 @@ export default function Task({ item }: TaskProps) {
 // pegando o id usando o server side rendering
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const id = params?.id as string;
-
   const docRef = doc(firebaseDB, "tarefas", id);
+
+  const queryComments = query(
+    collection(firebaseDB, "comments"),
+    where("taskId", "==", id),
+  );
+
+  const snapshotComments = await getDocs(queryComments);
+
+  const allComents: CommentsProps[] = snapshotComments.docs.map((doc) => {
+    const data = doc.data();
+
+    return {
+      id: doc.id,
+      comment: doc.data().comment,
+      user: doc.data().user,
+      email: doc.data().email,
+      createdAt: data.createdAt.toDate().toISOString(), // convertendo o Timestamp antes de retornar.
+      taskId: doc.data().taskId,
+    };
+  });
+
+  console.log(allComents);
 
   const snapshot = await getDoc(docRef);
 
@@ -122,9 +168,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     createdAt: new Date(miliseconds).toLocaleDateString(),
   };
 
-  console.log(task)
-
   return {
-    props: { item: task },
+    props: {
+      item: task,
+      allComents: allComents,
+    },
   };
 };
