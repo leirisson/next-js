@@ -1,0 +1,118 @@
+.containerMain{
+  background-color: #fff;
+  display: flex;
+  justify-content: space-around;
+  flex-direction: column;
+  align-items: center;
+  width: 22.375rem;
+  margin: 2rem auto;
+  border-radius: 5px;
+  height: 100vh;
+}
+
+.head{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: .5rem;
+}
+
+.head h1 {
+  color: #0F172A;
+  line-height: 2rem;
+  font-weight: bold;
+  font-size: 2rem;
+}
+
+.logo{
+  background-color: rgb(46, 204, 138, .10);
+  padding: 1rem;
+  border-radius: 100%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.img{
+  width: 1rem;
+  height: 1rem;
+}
+
+.bannerLogin{
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+}
+
+.banner{
+  border-radius: 5px;
+}
+
+.body{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.textcontainer{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: .5rem;
+}
+
+.textFooter, .text, .paragrafo {
+  text-align: center;
+}
+.text{
+  font-size: 1.5rem;
+  line-height: 1.8rem;
+}
+
+.paragrafo, .textFooter{
+  color: #64748B;
+    line-height: 1.8rem;
+}
+
+.textFooter{
+  padding: 1rem;
+  font-size: .9rem;
+}
+.textFooter span {
+  color: #2ECC8A;
+}
+
+.textFooter p{
+  line-height: 1.5rem;
+}
+
+.entrarComGoogle{
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  margin-top:2rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  gap:.5rem;
+}
+
+.google{
+display: flex;
+gap: 1rem;
+}
+
+.google p{
+  font-weight: bold;
+  font-size: 16px;
+}
