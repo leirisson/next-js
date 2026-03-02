@@ -1,10 +1,22 @@
+import { useSession, signIn, getSession } from "next-auth/react";
 import Head from "next/head";
 import styles from "@/styles/Home.module.css";
 import { FaShoppingBasket } from "react-icons/fa";
 import Image from "next/image";
 import google from "@/public/assets/google.png";
 import feira from "@/public/assets/feira.png";
-export default function Home() {
+import { GetServerSideProps } from "next";
+import Link from "next/link";
+
+interface HomeProps {
+  user: {
+    email: string;
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function Home({ user }: HomeProps) {
+  const { data: session, status } = useSession();
   return (
     <>
       <Head>
@@ -39,26 +51,52 @@ export default function Home() {
               lista de mercado.
             </p>
           </div>
-
-          <div className={styles.entrarComGoogle}>
-            <span className={styles.google}>
-              <Image
-                src={google}
-                className={styles.img}
-                alt="Imagem do google"
-              />
-            </span>
-            <p>Entrar com Google</p>
-          </div>
+          {status === "loading" ? (
+            <></>
+          ) : session ? (
+            <div>
+              <p>olá, {session.user?.name}</p>
+              <button>
+                <Link href="/dashboard">Ir para Home</Link>
+              </button>
+            </div>
+          ) : (
+            <button className={styles.entrarComGoogle}>
+              <span className={styles.google} onClick={() => signIn("google")}>
+                <Image
+                  src={google}
+                  className={styles.img}
+                  alt="Imagem do google"
+                />
+              </span>
+              <p>Entrar com Google</p>
+            </button>
+          )}
         </div>
 
         <div className={styles.textFooter}>
           <p>
             Ao entrar, você concorda com nossos<span> termos</span> <br />
-            <span> de uso </span> e <span>política de privacidade</span> 
+            <span> de uso </span> e <span>política de privacidade</span>
           </p>
         </div>
       </main>
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const session = await getSession({ req });
+
+  if (!session?.user) {
+    return {
+      props:{}
+    };
+  }
+
+  return {
+    props: {
+      user: { email: session?.user?.email },
+    },
+  };
+};
